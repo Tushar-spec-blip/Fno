@@ -155,3 +155,12 @@ input, select {
   background: transparent;
   cursor: pointer;
 }
+
+
+.side-buy {
+  background: #dceeff;
+}
+
+.side-sell {
+  background: #ffe0e0;
+}

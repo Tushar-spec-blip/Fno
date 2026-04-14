@@ -4,8 +4,8 @@ const adminData = [
 ];
 
 const overviewData = [
-  { ideaId: 'IDEA001', stock: 'TCS', tradeName: 'TCS 30 Apr 2680 CE Sell', expectedLot: 2000 },
-  { ideaId: 'IDEA002', stock: 'NESTLE', tradeName: 'Nestle 1300 April end CE Sell', expectedLot: 2500 },
+  { ideaId: 'IDEA001', stock: 'TCS', tradeName: 'TCS 30 Apr 2680 CE Sell', expiry: '30/Apr/2026', strike: 2680, peCe: 'CE', buySell: 'SELL', lotSize: 175, expectedPremiumPoints: 20 },
+  { ideaId: 'IDEA002', stock: 'NESTLE', tradeName: 'Nestle 1300 April end CE Sell', expiry: '30/Apr/2026', strike: 1300, peCe: 'CE', buySell: 'SELL', lotSize: 500, expectedPremiumPoints: 5 },
 ];
 
 const plannerData = [
@@ -50,7 +50,7 @@ document.getElementById('addAdminRow').addEventListener('click', () => {
 });
 
 document.getElementById('addOverviewRow').addEventListener('click', () => {
-  overviewData.push({ ideaId: '', stock: '', tradeName: '', expectedLot: 0 });
+  overviewData.push({ ideaId: '', stock: '', tradeName: '', expiry: '', strike: 0, peCe: 'CE', buySell: 'BUY', lotSize: 0, expectedPremiumPoints: 0 });
   renderOverview();
   renderPlanner();
 });
@@ -89,6 +89,37 @@ function isDuplicateAdminValue(key, value, currentIndex) {
   ));
 }
 
+
+function normalizeExpiry(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+
+  const match = raw.match(/^(\d{2})\/([A-Za-z]{3})\/(\d{4})$/);
+  if (!match) return null;
+
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const day = match[1];
+  const month = match[2].charAt(0).toUpperCase() + match[2].slice(1).toLowerCase();
+  const year = match[3];
+
+  if (!months.includes(month)) return null;
+
+  return `${day}/${month}/${year}`;
+}
+
+function sideClass(value) {
+  return value === 'BUY' ? 'side-buy' : 'side-sell';
+}
+
+
+function expectedLotsRs(row) {
+  return Number(row?.lotSize || 0) * Number(row?.expectedPremiumPoints || 0);
+}
+
+function inHandPrem(row) {
+  return expectedLotsRs(row) * 0.75;
+}
+
 function calc(row) {
   const client = getClient(row.clientRef);
   const idea = getIdea(row.ideaId);
@@ -97,7 +128,7 @@ function calc(row) {
   const clientCode = client?.clientCode || '';
   const clientName = client?.clientName || '';
 
-  const expectedLot = Number(idea?.expectedLot || 0);
+  const expectedLot = expectedLotsRs(idea);
   const stock = idea?.stock || '';
   const revenueNeeded = Number(row.monthlyTarget || 0) * Number(row.intendedPct || 0);
   const lotsNeeded = expectedLot > 0 ? Math.ceil(revenueNeeded / expectedLot) : 0;
@@ -187,14 +218,47 @@ function renderOverview() {
       <td><input value="${row.ideaId}" data-k="ideaId"></td>
       <td><input value="${row.stock}" data-k="stock"></td>
       <td><input value="${row.tradeName}" data-k="tradeName"></td>
-      <td><input type="number" value="${row.expectedLot}" data-k="expectedLot"></td>
+      <td><input value="${row.expiry || ''}" placeholder="DD/MMM/YYYY" data-k="expiry"></td>
+      <td><input type="number" value="${row.strike || 0}" data-k="strike"></td>
+      <td>
+        <select data-k="peCe">
+          <option ${row.peCe === 'PE' ? 'selected' : ''} value="PE">PE</option>
+          <option ${row.peCe === 'CE' ? 'selected' : ''} value="CE">CE</option>
+        </select>
+      </td>
+      <td class="${sideClass(row.buySell)}">
+        <select data-k="buySell">
+          <option ${row.buySell === 'BUY' ? 'selected' : ''} value="BUY">BUY</option>
+          <option ${row.buySell === 'SELL' ? 'selected' : ''} value="SELL">SELL</option>
+        </select>
+      </td>
+      <td><input type="number" value="${row.lotSize || 0}" data-k="lotSize"></td>
+      <td><input type="number" value="${row.expectedPremiumPoints || 0}" data-k="expectedPremiumPoints"></td>
+      <td class="cell-auto">${toMoney(expectedLotsRs(row))}</td>
+      <td class="cell-auto">${toMoney(inHandPrem(row))}</td>
       <td><button class="delete">✕</button></td>
     `;
 
-    tr.querySelectorAll('input').forEach((input) => {
-      input.addEventListener('input', (e) => {
+    tr.querySelectorAll('input, select').forEach((field) => {
+      field.addEventListener('input', (e) => {
         const key = e.target.dataset.k;
-        overviewData[i][key] = key === 'expectedLot' ? Number(e.target.value || 0) : e.target.value;
+
+        if (key === 'expiry') {
+          const formatted = normalizeExpiry(e.target.value);
+          if (formatted === null) {
+            alert('Expiry must be in DD/MMM/YYYY format');
+            e.target.value = row.expiry || '';
+            return;
+          }
+          row.expiry = formatted;
+          e.target.value = formatted;
+        } else if (['strike', 'lotSize', 'expectedPremiumPoints'].includes(key)) {
+          row[key] = Number(e.target.value || 0);
+        } else {
+          row[key] = e.target.value;
+        }
+
+        renderOverview();
         renderPlanner();
       });
     });
@@ -339,3 +403,4 @@ renderOverview();
 renderPlanner();
 
 switchView('dashboard');
+
