@@ -275,6 +275,18 @@ input, select {
   align-content: start;
 }
 
+.idea-select-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+
+#ideaSelectList {
+  display: grid;
+  gap: 8px;
+}
+
 .idea-snippet {
   border: 1px solid var(--line);
   background: #f7faff;

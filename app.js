@@ -20,6 +20,8 @@ const plannerBody = document.querySelector('#plannerTable tbody');
 const snapshot = document.getElementById('snapshot');
 const searchInput = document.querySelector('.search');
 const ideaAssignSelect = document.getElementById('ideaAssignSelect');
+const ideaSelectList = document.getElementById('ideaSelectList');
+const addAnotherIdeaBtn = document.getElementById('addAnotherIdeaBtn');
 const selectAllClients = document.getElementById('selectAllClients');
 const deselectAllClients = document.getElementById('deselectAllClients');
 const submitIdeaAssign = document.getElementById('submitIdeaAssign');
@@ -115,6 +117,7 @@ function renderIdeaPlannerTable() {
 
   const activeFilter = ideaPlannerFilter.value;
   const assignments = Object.entries(clientIdeaAssignment)
+    .flatMap(([clientRef, ideaIds]) => (ideaIds || []).map((ideaId) => [clientRef, ideaId]))
     .filter(([, ideaId]) => !activeFilter || ideaId === activeFilter);
 
   ideaPlannerBody.innerHTML = '';
@@ -169,6 +172,47 @@ if (ideaPlannerFilter) {
   });
 }
 
+
+function getSelectedIdeaIds() {
+  return [...document.querySelectorAll('.idea-assign-select')]
+    .map((sel) => sel.value)
+    .filter(Boolean);
+}
+
+function makeIdeaSelectRow(selectedValue = '') {
+  const row = document.createElement('div');
+  row.className = 'idea-select-row';
+
+  const select = document.createElement('select');
+  select.className = 'idea-assign-select';
+  const ideaIds = overviewData.map((x) => x.ideaId).filter(Boolean);
+  select.innerHTML = ideaIds
+    .map((ideaId) => `<option ${selectedValue === ideaId ? 'selected' : ''} value="${ideaId}">${ideaId}</option>`)
+    .join('');
+
+  const removeBtn = document.createElement('button');
+  removeBtn.type = 'button';
+  removeBtn.className = 'delete';
+  removeBtn.textContent = '✕';
+  removeBtn.title = 'Remove idea';
+
+  removeBtn.addEventListener('click', () => {
+    row.remove();
+    if (document.querySelectorAll('.idea-assign-select').length === 0 && ideaSelectList) {
+      ideaSelectList.appendChild(makeIdeaSelectRow());
+    }
+    renderIdeaSelectPage();
+  });
+
+  select.addEventListener('change', () => {
+    renderIdeaSelectPage();
+  });
+
+  row.appendChild(select);
+  row.appendChild(removeBtn);
+  return row;
+}
+
 function syncSelectAllState() {
   if (!selectAllClients) return;
 
@@ -180,8 +224,10 @@ function renderIdeaAssignSummary() {
   if (!ideaAssignSummaryBody) return;
 
   const counts = {};
-  Object.values(clientIdeaAssignment).forEach((ideaId) => {
-    counts[ideaId] = (counts[ideaId] || 0) + 1;
+  Object.values(clientIdeaAssignment).forEach((ideaIds) => {
+    (ideaIds || []).forEach((ideaId) => {
+      counts[ideaId] = (counts[ideaId] || 0) + 1;
+    });
   });
 
   const ideaIds = overviewData.map((x) => x.ideaId).filter(Boolean);
@@ -197,20 +243,34 @@ function renderIdeaAssignSummary() {
 function renderIdeaSelectPage() {
   if (!ideaAssignSelect || !clientChecklist) return;
 
-  const selectedIdea = ideaAssignSelect.value;
-  const ideaIds = overviewData.map((x) => x.ideaId).filter(Boolean);
+  const selectedIdeaIdsBefore = getSelectedIdeaIds();
 
-  ideaAssignSelect.innerHTML = ideaIds
-    .map((ideaId) => `<option ${selectedIdea === ideaId ? 'selected' : ''} value="${ideaId}">${ideaId}</option>`)
-    .join('');
+  if (ideaSelectList) {
+    const currentRows = [...ideaSelectList.querySelectorAll('.idea-select-row')];
+    currentRows.forEach((row, idx) => {
+      const selectedValue = selectedIdeaIdsBefore[idx] || '';
+      const newRow = makeIdeaSelectRow(selectedValue);
+      row.replaceWith(newRow);
+    });
 
-  const activeIdea = ideaAssignSelect.value || ideaIds[0] || '';
+    if (ideaSelectList.querySelectorAll('.idea-select-row').length === 0) {
+      ideaSelectList.appendChild(makeIdeaSelectRow());
+    }
+  }
 
-  const ideaDetails = overviewData.find((x) => x.ideaId === activeIdea);
+  const selectedIdeaIds = getSelectedIdeaIds();
   if (selectedIdeaSnippet) {
-    selectedIdeaSnippet.textContent = ideaDetails
-      ? `Selected Idea: ${activeIdea} | Trade Name: ${ideaDetails.tradeName || 'N/A'}`
-      : 'Select an Idea ID to view quick details.';
+    if (selectedIdeaIds.length === 0) {
+      selectedIdeaSnippet.textContent = 'Select an Idea ID to view quick details.';
+    } else {
+      const snippet = selectedIdeaIds
+        .map((ideaId) => {
+          const ideaDetails = overviewData.find((x) => x.ideaId === ideaId);
+          return `${ideaId}: ${ideaDetails?.tradeName || 'N/A'}`;
+        })
+        .join(' | ');
+      selectedIdeaSnippet.textContent = `Selected Ideas: ${snippet}`;
+    }
   }
 
   clientChecklist.innerHTML = adminData
@@ -230,9 +290,12 @@ function renderIdeaSelectPage() {
   renderIdeaPlannerTable();
 }
 
-if (ideaAssignSelect) {
-  ideaAssignSelect.addEventListener('change', () => {
-    renderIdeaSelectPage();
+if (addAnotherIdeaBtn) {
+  addAnotherIdeaBtn.addEventListener('click', () => {
+    if (ideaSelectList) {
+      ideaSelectList.appendChild(makeIdeaSelectRow());
+      renderIdeaSelectPage();
+    }
   });
 }
 
@@ -256,9 +319,9 @@ if (deselectAllClients) {
 
 if (submitIdeaAssign) {
   submitIdeaAssign.addEventListener('click', () => {
-    const ideaId = ideaAssignSelect?.value;
-    if (!ideaId) {
-      alert('Please select an Idea ID.');
+    const selectedIdeaIds = getSelectedIdeaIds();
+    if (selectedIdeaIds.length === 0) {
+      alert('Please select at least one Idea ID.');
       return;
     }
 
@@ -267,7 +330,8 @@ if (submitIdeaAssign) {
       .filter(Boolean);
 
     selectedClients.forEach((clientRef) => {
-      clientIdeaAssignment[clientRef] = ideaId;
+      const existing = clientIdeaAssignment[clientRef] || [];
+      clientIdeaAssignment[clientRef] = [...new Set([...existing, ...selectedIdeaIds])];
     });
 
     document.querySelectorAll('.assign-client-check').forEach((check) => {
@@ -276,8 +340,8 @@ if (submitIdeaAssign) {
     syncSelectAllState();
 
     plannerData.forEach((row) => {
-      if (row.clientRef && clientIdeaAssignment[row.clientRef]) {
-        row.ideaId = clientIdeaAssignment[row.clientRef];
+      if (row.clientRef && clientIdeaAssignment[row.clientRef]?.length) {
+        row.ideaId = clientIdeaAssignment[row.clientRef][0];
       }
     });
 
@@ -559,8 +623,8 @@ function renderPlanner() {
         const numeric = ['monthlyTarget', 'intendedPct'];
         plannerData[i][key] = numeric.includes(key) ? Number(e.target.value || 0) : e.target.value;
 
-        if (key === 'clientRef' && clientIdeaAssignment[plannerData[i].clientRef]) {
-          plannerData[i].ideaId = clientIdeaAssignment[plannerData[i].clientRef];
+        if (key === 'clientRef' && clientIdeaAssignment[plannerData[i].clientRef]?.length) {
+          plannerData[i].ideaId = clientIdeaAssignment[plannerData[i].clientRef][0];
         }
 
         renderPlanner();

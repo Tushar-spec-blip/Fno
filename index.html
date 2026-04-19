@@ -90,8 +90,13 @@
           <div id="ideaSelectAssignPanel" class="idea-tab-panel active">
             <div class="idea-assign-wrap">
               <div class="assign-controls">
-                <label for="ideaAssignSelect">Choose Idea ID</label>
-                <select id="ideaAssignSelect"></select>
+                <label>Choose Idea ID</label>
+                <div id="ideaSelectList">
+                  <div class="idea-select-row">
+                    <select id="ideaAssignSelect" class="idea-assign-select"></select>
+                  </div>
+                </div>
+                <button id="addAnotherIdeaBtn" class="btn secondary">+ Add another idea</button>
                 <div id="selectedIdeaSnippet" class="idea-snippet"></div>
                 <label class="select-all-row">
                   <input type="checkbox" id="selectAllClients" />
@@ -190,4 +195,3 @@
     <script src="app.js"></script>
   </body>
 </html>
-
