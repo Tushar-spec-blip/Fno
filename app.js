@@ -153,8 +153,13 @@ function renderIdeaPlannerTable() {
 }
 
 ideaTabButtons.forEach((btn) => {
-  btn.addEventListener('click', () => {
-    switchIdeaTab(btn.dataset.ideaTab);
+  btn.addEventListener('click', (e) => {
+    e.preventDefault();
+    const tabName = btn.dataset.ideaTab;
+    switchIdeaTab(tabName);
+    if (tabName === 'planner') {
+      renderIdeaPlannerTable();
+    }
   });
 });
 

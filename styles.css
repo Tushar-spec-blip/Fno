@@ -251,6 +251,14 @@ input, select {
   display: block;
 }
 
+.idea-tab-panel.hidden-view {
+  display: none !important;
+}
+
+.idea-tab-panel.active-view {
+  display: block !important;
+}
+
 .idea-assign-wrap {
   display: grid;
   grid-template-columns: 280px 1fr;
