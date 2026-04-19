@@ -24,6 +24,7 @@ const selectAllClients = document.getElementById('selectAllClients');
 const submitIdeaAssign = document.getElementById('submitIdeaAssign');
 const clientChecklist = document.getElementById('clientChecklist');
 const ideaAssignSummaryBody = document.querySelector('#ideaAssignSummaryTable tbody');
+const selectedIdeaSnippet = document.getElementById('selectedIdeaSnippet');
 let searchQuery = '';
 
 
@@ -96,7 +97,7 @@ function renderIdeaAssignSummary() {
 
   ideaIds.forEach((ideaId) => {
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${ideaId}</td><td>${counts[ideaId] || 0}</td>`;
+    tr.innerHTML = `<td data-label="Idea ID">${ideaId}</td><td data-label="Assigned Clients Count">${counts[ideaId] || 0}</td>`;
     ideaAssignSummaryBody.appendChild(tr);
   });
 }
@@ -113,6 +114,13 @@ function renderIdeaSelectPage() {
 
   const activeIdea = ideaAssignSelect.value || ideaIds[0] || '';
 
+  const ideaDetails = overviewData.find((x) => x.ideaId === activeIdea);
+  if (selectedIdeaSnippet) {
+    selectedIdeaSnippet.textContent = ideaDetails
+      ? `Selected Idea: ${activeIdea} | Trade Name: ${ideaDetails.tradeName || 'N/A'}`
+      : 'Select an Idea ID to view quick details.';
+  }
+
   clientChecklist.innerHTML = adminData
     .map((client) => {
       const checked = clientIdeaAssignment[client.ref] === activeIdea ? 'checked' : '';
@@ -120,10 +128,9 @@ function renderIdeaSelectPage() {
     })
     .join('');
 
-  const checks = [...document.querySelectorAll('.assign-client-check')];
   if (selectAllClients) {
-    const allChecked = checks.length > 0 && checks.every((c) => c.checked);
-    selectAllClients.checked = allChecked;
+    const checks = [...document.querySelectorAll('.assign-client-check')];
+    selectAllClients.checked = checks.length > 0 && checks.every((c) => c.checked);
   }
 
   renderIdeaAssignSummary();
@@ -137,9 +144,12 @@ if (ideaAssignSelect) {
 
 if (selectAllClients) {
   selectAllClients.addEventListener('change', (e) => {
-    document.querySelectorAll('.assign-client-check').forEach((check) => {
-      check.checked = e.target.checked;
+    const checks = [...document.querySelectorAll('.assign-client-check')];
+    checks.forEach((check) => {
+      check.checked = !check.checked;
     });
+
+    e.target.checked = checks.length > 0 && checks.every((check) => check.checked);
   });
 }
 
@@ -302,11 +312,11 @@ function renderAdmin() {
   adminData.forEach((row, i) => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td><input value="${row.ref}" data-k="ref" placeholder="CL001"></td>
-      <td><input value="${row.allocationId}" data-k="allocationId"></td>
-      <td><input value="${row.clientCode}" data-k="clientCode"></td>
-      <td><input value="${row.clientName}" data-k="clientName"></td>
-      <td><button class="delete">✕</button></td>
+      <td data-label="Client Ref"><input value="${row.ref}" data-k="ref" placeholder="CL001"></td>
+      <td data-label="Allocation ID (A)"><input value="${row.allocationId}" data-k="allocationId"></td>
+      <td data-label="Client Code (B)"><input value="${row.clientCode}" data-k="clientCode"></td>
+      <td data-label="Client Name (C)"><input value="${row.clientName}" data-k="clientName"></td>
+      <td data-label="Action"><button class="delete">✕</button></td>
     `;
 
     tr.querySelectorAll('input').forEach((input) => {
@@ -347,28 +357,28 @@ function renderOverview() {
   overviewData.forEach((row, i) => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td><input value="${row.ideaId}" data-k="ideaId"></td>
-      <td><input value="${row.stock}" data-k="stock"></td>
-      <td><input value="${row.tradeName}" data-k="tradeName"></td>
-      <td><input value="${row.expiry || ""}" placeholder="DD/MMM/YYYY" data-k="expiry"></td>
-      <td><input type="number" value="${row.strike || 0}" data-k="strike"></td>
-      <td>
+      <td data-label="Idea ID"><input value="${row.ideaId}" data-k="ideaId"></td>
+      <td data-label="Stock"><input value="${row.stock}" data-k="stock"></td>
+      <td data-label="Trade Name"><input value="${row.tradeName}" data-k="tradeName"></td>
+      <td data-label="Expiry"><input value="${row.expiry || ""}" placeholder="DD/MMM/YYYY" data-k="expiry"></td>
+      <td data-label="Strike"><input type="number" value="${row.strike || 0}" data-k="strike"></td>
+      <td data-label="PE/CE">
         <select data-k="peCe">
           <option ${row.peCe === 'PE' ? 'selected' : ''} value="PE">PE</option>
           <option ${row.peCe === 'CE' ? 'selected' : ''} value="CE">CE</option>
         </select>
       </td>
-      <td class="${sideClass(row.buySell)}">
+      <td data-label="BUY/SELL" class="${sideClass(row.buySell)}">
         <select data-k="buySell">
           <option ${row.buySell === 'BUY' ? 'selected' : ''} value="BUY">BUY</option>
           <option ${row.buySell === 'SELL' ? 'selected' : ''} value="SELL">SELL</option>
         </select>
       </td>
-      <td><input type="number" value="${row.lotSize || 0}" data-k="lotSize"></td>
-      <td><input type="number" value="${row.expectedPremiumPoints || 0}" data-k="expectedPremiumPoints"></td>
-      <td class="cell-auto">${toMoney(expectedLotsRs(row))}</td>
-      <td class="cell-auto">${toMoney(inHandPrem(row))}</td>
-      <td><button class="delete">✕</button></td>
+      <td data-label="Lot Size"><input type="number" value="${row.lotSize || 0}" data-k="lotSize"></td>
+      <td data-label="Expected Premium Points"><input type="number" value="${row.expectedPremiumPoints || 0}" data-k="expectedPremiumPoints"></td>
+      <td data-label="Expected/Lots RS" class="cell-auto">${toMoney(expectedLotsRs(row))}</td>
+      <td data-label="In Hand Prem" class="cell-auto">${toMoney(inHandPrem(row))}</td>
+      <td data-label="Action"><button class="delete">✕</button></td>
     `;
 
     tr.querySelectorAll('input, select').forEach((field) => {
@@ -413,28 +423,28 @@ function renderPlanner() {
     const out = calc(row);
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td><select data-k="clientRef"><option value="">Select Client</option>${clientOptions(row.clientRef)}</select></td>
-      <td class="cell-auto">${out.allocationId}</td>
-      <td class="cell-auto">${out.clientCode}</td>
-      <td class="cell-auto">${out.clientName}</td>
-      <td><input type="number" value="${row.monthlyTarget}" data-k="monthlyTarget"></td>
-      <td><input value="${row.slot}" data-k="slot"></td>
-      <td><select data-k="ideaId"><option value="">Select Idea</option>${ideaOptions(row.ideaId)}</select></td>
-      <td class="cell-auto">${out.stock}</td>
-      <td>
+      <td data-label="Client Ref"><select data-k="clientRef"><option value="">Select Client</option>${clientOptions(row.clientRef)}</select></td>
+      <td data-label="Allocation ID (A)" class="cell-auto">${out.allocationId}</td>
+      <td data-label="Client Code (B)" class="cell-auto">${out.clientCode}</td>
+      <td data-label="Client Name (C)" class="cell-auto">${out.clientName}</td>
+      <td data-label="Monthly Target"><input type="number" value="${row.monthlyTarget}" data-k="monthlyTarget"></td>
+      <td data-label="Slot"><input value="${row.slot}" data-k="slot"></td>
+      <td data-label="Idea ID"><select data-k="ideaId"><option value="">Select Idea</option>${ideaOptions(row.ideaId)}</select></td>
+      <td data-label="Stock" class="cell-auto">${out.stock}</td>
+      <td data-label="Intended %">
         <select data-k="intendedPct">
           ${[0.1, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
             .map((v) => `<option ${Number(row.intendedPct) === v ? 'selected' : ''} value="${v}">${Math.round(v * 100)}%</option>`)
             .join('')}
         </select>
       </td>
-      <td class="cell-auto">${toMoney(out.revenueNeeded)}</td>
-      <td class="cell-auto">${toMoney(out.expectedLot)}</td>
-      <td class="cell-auto">${toMoney(out.lotsNeeded)}</td>
-      <td class="cell-auto">${toMoney(out.plannedRevenue)}</td>
-      <td class="cell-auto">${toPercent(out.achievePct)}</td>
-      <td class="cell-auto">${out.status}</td>
-      <td><button class="delete">✕</button></td>
+      <td data-label="Revenue Needed" class="cell-auto">${toMoney(out.revenueNeeded)}</td>
+      <td data-label="Expected / Lot" class="cell-auto">${toMoney(out.expectedLot)}</td>
+      <td data-label="Lots Needed" class="cell-auto">${toMoney(out.lotsNeeded)}</td>
+      <td data-label="Planned Revenue" class="cell-auto">${toMoney(out.plannedRevenue)}</td>
+      <td data-label="Achieve %" class="cell-auto">${toPercent(out.achievePct)}</td>
+      <td data-label="Coverage Status" class="cell-auto">${out.status}</td>
+      <td data-label="Action"><button class="delete">✕</button></td>
     `;
 
     tr.querySelectorAll('input, select').forEach((el) => {

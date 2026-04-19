@@ -241,6 +241,15 @@ input, select {
   align-content: start;
 }
 
+.idea-snippet {
+  border: 1px solid var(--line);
+  background: #f7faff;
+  border-radius: 8px;
+  padding: 8px;
+  font-size: 13px;
+  color: #304b70;
+}
+
 .client-checklist {
   border: 1px solid var(--line);
   border-radius: 10px;
@@ -435,3 +444,6 @@ input, select {
   }
 
 }
+
+
+
