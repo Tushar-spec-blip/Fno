@@ -9,16 +9,19 @@
   <body>
     <div class="app-shell">
       <aside class="sidebar">
-        <div class="sidebar-head">☰ MENU</div>
+        <div class="sidebar-head"><button id="menuToggle" class="menu-toggle" aria-label="Toggle menu">☰</button><span>MENU</span></div>
         <button class="nav-item active" data-view="dashboard">Dashboard</button>
         <button class="nav-item" data-view="planner">Planner Sheet</button>
         <button class="nav-item" data-view="admin">Admin Menu</button>
         <button class="nav-item" data-view="overview">Idea</button>
+        <button class="nav-item" data-view="idea-select">Idea Select</button>
       </aside>
 
       <main class="main-panel">
         <header class="topbar">
-          <h1>F&amp;O Planner Workspace</h1>
+          <div class="topbar-left">
+            <h1>F&amp;O Planner Workspace</h1>
+          </div>
           <input class="search" placeholder="Type to search" />
         </header>
 
@@ -67,6 +70,38 @@
                 <th>Expected/Lots RS</th>
                 <th>In Hand Prem</th>
                 <th></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </section>
+
+
+        <section id="view-idea-select" class="view card hidden-view">
+          <div class="section-head">
+            <h2>Idea Select</h2>
+          </div>
+
+          <div class="idea-assign-wrap">
+            <div class="assign-controls">
+              <label for="ideaAssignSelect">Choose Idea ID</label>
+              <select id="ideaAssignSelect"></select>
+              <label class="select-all-row">
+                <input type="checkbox" id="selectAllClients" />
+                Select All Clients
+              </label>
+              <button id="submitIdeaAssign" class="btn">Submit Assignment</button>
+            </div>
+
+            <div class="client-checklist" id="clientChecklist"></div>
+          </div>
+
+          <h3>Assignment Overview</h3>
+          <table id="ideaAssignSummaryTable">
+            <thead>
+              <tr>
+                <th>Idea ID</th>
+                <th>Assigned Clients Count</th>
               </tr>
             </thead>
             <tbody></tbody>

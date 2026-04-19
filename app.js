@@ -12,10 +12,19 @@ const plannerData = [
   { clientRef: 'CL001', monthlyTarget: 6000, slot: '1', ideaId: 'IDEA001', intendedPct: 0.6 },
 ];
 
+const clientIdeaAssignment = {};
+
 const adminBody = document.querySelector('#adminTable tbody');
 const overviewBody = document.querySelector('#overviewTable tbody');
 const plannerBody = document.querySelector('#plannerTable tbody');
 const snapshot = document.getElementById('snapshot');
+const searchInput = document.querySelector('.search');
+const ideaAssignSelect = document.getElementById('ideaAssignSelect');
+const selectAllClients = document.getElementById('selectAllClients');
+const submitIdeaAssign = document.getElementById('submitIdeaAssign');
+const clientChecklist = document.getElementById('clientChecklist');
+const ideaAssignSummaryBody = document.querySelector('#ideaAssignSummaryTable tbody');
+let searchQuery = '';
 
 
 const viewButtons = document.querySelectorAll('.nav-item');
@@ -24,6 +33,7 @@ const views = {
   planner: document.getElementById('view-planner'),
   admin: document.getElementById('view-admin'),
   overview: document.getElementById('view-overview'),
+  'idea-select': document.getElementById('view-idea-select'),
 };
 
 function switchView(viewName) {
@@ -36,11 +46,129 @@ function switchView(viewName) {
   viewButtons.forEach((btn) => {
     btn.classList.toggle('active', btn.dataset.view === viewName);
   });
+
+  applyTableSearch();
+  renderIdeaSelectPage();
 }
 
 viewButtons.forEach((btn) => {
   btn.addEventListener('click', () => switchView(btn.dataset.view));
 });
+
+const shell = document.querySelector('.app-shell');
+const menuToggle = document.getElementById('menuToggle');
+if (menuToggle && shell) {
+  menuToggle.addEventListener('click', () => {
+    shell.classList.toggle('menu-closed');
+  });
+}
+
+
+function applyTableSearch() {
+  const tables = ['#adminTable', '#overviewTable', '#plannerTable'];
+
+  tables.forEach((selector) => {
+    const rows = document.querySelectorAll(`${selector} tbody tr`);
+    rows.forEach((row) => {
+      const text = row.textContent.toLowerCase();
+      row.style.display = !searchQuery || text.includes(searchQuery) ? '' : 'none';
+    });
+  });
+}
+
+if (searchInput) {
+  searchInput.addEventListener('input', (e) => {
+    searchQuery = String(e.target.value || '').trim().toLowerCase();
+    applyTableSearch();
+  });
+}
+
+function renderIdeaAssignSummary() {
+  if (!ideaAssignSummaryBody) return;
+
+  const counts = {};
+  Object.values(clientIdeaAssignment).forEach((ideaId) => {
+    counts[ideaId] = (counts[ideaId] || 0) + 1;
+  });
+
+  const ideaIds = overviewData.map((x) => x.ideaId).filter(Boolean);
+  ideaAssignSummaryBody.innerHTML = '';
+
+  ideaIds.forEach((ideaId) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${ideaId}</td><td>${counts[ideaId] || 0}</td>`;
+    ideaAssignSummaryBody.appendChild(tr);
+  });
+}
+
+function renderIdeaSelectPage() {
+  if (!ideaAssignSelect || !clientChecklist) return;
+
+  const selectedIdea = ideaAssignSelect.value;
+  const ideaIds = overviewData.map((x) => x.ideaId).filter(Boolean);
+
+  ideaAssignSelect.innerHTML = ideaIds
+    .map((ideaId) => `<option ${selectedIdea === ideaId ? 'selected' : ''} value="${ideaId}">${ideaId}</option>`)
+    .join('');
+
+  const activeIdea = ideaAssignSelect.value || ideaIds[0] || '';
+
+  clientChecklist.innerHTML = adminData
+    .map((client) => {
+      const checked = clientIdeaAssignment[client.ref] === activeIdea ? 'checked' : '';
+      return `<label class="check-item"><input type="checkbox" class="assign-client-check" data-client-ref="${client.ref}" ${checked}> ${client.ref} - ${client.clientName || 'Unnamed'}</label>`;
+    })
+    .join('');
+
+  const checks = [...document.querySelectorAll('.assign-client-check')];
+  if (selectAllClients) {
+    const allChecked = checks.length > 0 && checks.every((c) => c.checked);
+    selectAllClients.checked = allChecked;
+  }
+
+  renderIdeaAssignSummary();
+}
+
+if (ideaAssignSelect) {
+  ideaAssignSelect.addEventListener('change', () => {
+    renderIdeaSelectPage();
+  });
+}
+
+if (selectAllClients) {
+  selectAllClients.addEventListener('change', (e) => {
+    document.querySelectorAll('.assign-client-check').forEach((check) => {
+      check.checked = e.target.checked;
+    });
+  });
+}
+
+if (submitIdeaAssign) {
+  submitIdeaAssign.addEventListener('click', () => {
+    const ideaId = ideaAssignSelect?.value;
+    if (!ideaId) {
+      alert('Please select an Idea ID.');
+      return;
+    }
+
+    const selectedClients = [...document.querySelectorAll('.assign-client-check:checked')]
+      .map((node) => node.dataset.clientRef)
+      .filter(Boolean);
+
+    selectedClients.forEach((clientRef) => {
+      clientIdeaAssignment[clientRef] = ideaId;
+    });
+
+    plannerData.forEach((row) => {
+      if (row.clientRef && clientIdeaAssignment[row.clientRef]) {
+        row.ideaId = clientIdeaAssignment[row.clientRef];
+      }
+    });
+
+    renderIdeaSelectPage();
+    renderPlanner();
+  });
+}
 
 
 document.getElementById('addAdminRow').addEventListener('click', () => {
@@ -112,6 +240,7 @@ function sideClass(value) {
 }
 
 
+
 function expectedLotsRs(row) {
   return Number(row?.lotSize || 0) * Number(row?.expectedPremiumPoints || 0);
 }
@@ -181,7 +310,7 @@ function renderAdmin() {
     `;
 
     tr.querySelectorAll('input').forEach((input) => {
-      input.addEventListener('input', (e) => {
+      input.addEventListener('change', (e) => {
         const key = e.target.dataset.k;
         const newValue = e.target.value;
         const oldValue = adminData[i][key];
@@ -208,6 +337,9 @@ function renderAdmin() {
 
     adminBody.appendChild(tr);
   });
+
+  applyTableSearch();
+  renderIdeaSelectPage();
 }
 
 function renderOverview() {
@@ -218,7 +350,7 @@ function renderOverview() {
       <td><input value="${row.ideaId}" data-k="ideaId"></td>
       <td><input value="${row.stock}" data-k="stock"></td>
       <td><input value="${row.tradeName}" data-k="tradeName"></td>
-      <td><input value="${row.expiry || ''}" placeholder="DD/MMM/YYYY" data-k="expiry"></td>
+      <td><input value="${row.expiry || ""}" placeholder="DD/MMM/YYYY" data-k="expiry"></td>
       <td><input type="number" value="${row.strike || 0}" data-k="strike"></td>
       <td>
         <select data-k="peCe">
@@ -240,7 +372,7 @@ function renderOverview() {
     `;
 
     tr.querySelectorAll('input, select').forEach((field) => {
-      field.addEventListener('input', (e) => {
+      field.addEventListener('change', (e) => {
         const key = e.target.dataset.k;
 
         if (key === 'expiry') {
@@ -251,7 +383,6 @@ function renderOverview() {
             return;
           }
           row.expiry = formatted;
-          e.target.value = formatted;
         } else if (['strike', 'lotSize', 'expectedPremiumPoints'].includes(key)) {
           row[key] = Number(e.target.value || 0);
         } else {
@@ -271,6 +402,9 @@ function renderOverview() {
 
     overviewBody.appendChild(tr);
   });
+
+  applyTableSearch();
+  renderIdeaSelectPage();
 }
 
 function renderPlanner() {
@@ -304,10 +438,15 @@ function renderPlanner() {
     `;
 
     tr.querySelectorAll('input, select').forEach((el) => {
-      el.addEventListener('input', (e) => {
+      el.addEventListener('change', (e) => {
         const key = e.target.dataset.k;
         const numeric = ['monthlyTarget', 'intendedPct'];
         plannerData[i][key] = numeric.includes(key) ? Number(e.target.value || 0) : e.target.value;
+
+        if (key === 'clientRef' && clientIdeaAssignment[plannerData[i].clientRef]) {
+          plannerData[i].ideaId = clientIdeaAssignment[plannerData[i].clientRef];
+        }
+
         renderPlanner();
       });
     });
@@ -321,6 +460,8 @@ function renderPlanner() {
   });
 
   renderSnapshot();
+  applyTableSearch();
+  renderIdeaSelectPage();
 }
 
 function renderSnapshot() {
@@ -400,7 +541,7 @@ function exportPlannerCsv() {
 
 renderAdmin();
 renderOverview();
+renderIdeaSelectPage();
 renderPlanner();
 
 switchView('dashboard');
-
