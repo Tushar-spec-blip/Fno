@@ -26,6 +26,11 @@ const submitIdeaAssign = document.getElementById('submitIdeaAssign');
 const clientChecklist = document.getElementById('clientChecklist');
 const ideaAssignSummaryBody = document.querySelector('#ideaAssignSummaryTable tbody');
 const selectedIdeaSnippet = document.getElementById('selectedIdeaSnippet');
+const ideaTabButtons = document.querySelectorAll('.idea-tab-btn');
+const ideaAssignPanel = document.getElementById('ideaSelectAssignPanel');
+const ideaPlannerPanel = document.getElementById('ideaPlannerPanel');
+const ideaPlannerFilter = document.getElementById('ideaPlannerFilter');
+const ideaPlannerBody = document.querySelector('#ideaPlannerTable tbody');
 let searchQuery = '';
 
 
@@ -67,7 +72,7 @@ if (menuToggle && shell) {
 
 
 function applyTableSearch() {
-  const tables = ['#adminTable', '#overviewTable', '#plannerTable'];
+  const tables = ['#adminTable', '#overviewTable', '#plannerTable', '#ideaPlannerTable'];
 
   tables.forEach((selector) => {
     const rows = document.querySelectorAll(`${selector} tbody tr`);
@@ -85,6 +90,79 @@ if (searchInput) {
   });
 }
 
+
+
+function switchIdeaTab(tabName) {
+  if (!ideaAssignPanel || !ideaPlannerPanel) return;
+
+  const showAssign = tabName === 'assign';
+  ideaAssignPanel.classList.toggle('hidden-view', !showAssign);
+  ideaAssignPanel.classList.toggle('active-view', showAssign);
+  ideaPlannerPanel.classList.toggle('hidden-view', showAssign);
+  ideaPlannerPanel.classList.toggle('active-view', !showAssign);
+
+  ideaTabButtons.forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.ideaTab === tabName);
+  });
+}
+
+function renderIdeaPlannerTable() {
+  if (!ideaPlannerBody || !ideaPlannerFilter) return;
+
+  const selectedFilter = ideaPlannerFilter.value;
+  const ideaIds = overviewData.map((x) => x.ideaId).filter(Boolean);
+  ideaPlannerFilter.innerHTML = ['<option value="">All Ideas</option>', ...ideaIds.map((id) => `<option ${selectedFilter === id ? 'selected' : ''} value="${id}">${id}</option>`)].join('');
+
+  const activeFilter = ideaPlannerFilter.value;
+  const assignments = Object.entries(clientIdeaAssignment)
+    .filter(([, ideaId]) => !activeFilter || ideaId === activeFilter);
+
+  ideaPlannerBody.innerHTML = '';
+
+  assignments.forEach(([clientRef, ideaId]) => {
+    const client = adminData.find((x) => x.ref === clientRef) || {};
+    const idea = overviewData.find((x) => x.ideaId === ideaId) || {};
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td data-label="Idea ID">${ideaId}</td>
+      <td data-label="Client Ref">${clientRef}</td>
+      <td data-label="Client Code">${client.clientCode || ''}</td>
+      <td data-label="Client Name">${client.clientName || ''}</td>
+      <td data-label="Stock">${idea.stock || ''}</td>
+      <td data-label="Trade Name">${idea.tradeName || ''}</td>
+      <td data-label="Expiry">${idea.expiry || ''}</td>
+      <td data-label="Strike">${idea.strike || ''}</td>
+      <td data-label="PE/CE">${idea.peCe || ''}</td>
+      <td data-label="BUY/SELL">${idea.buySell || ''}</td>
+      <td data-label="Lot Size">${idea.lotSize || 0}</td>
+      <td data-label="Expected Premium Points">${idea.expectedPremiumPoints || 0}</td>
+      <td data-label="Expected/Lots RS">${toMoney(expectedLotsRs(idea))}</td>
+      <td data-label="In Hand Prem">${toMoney(inHandPrem(idea))}</td>
+    `;
+    ideaPlannerBody.appendChild(tr);
+  });
+
+  if (assignments.length === 0) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = '<td data-label="Info" colspan="14">No clients assigned for selected Idea ID.</td>';
+    ideaPlannerBody.appendChild(tr);
+  }
+
+  applyTableSearch();
+}
+
+ideaTabButtons.forEach((btn) => {
+  btn.addEventListener('click', () => {
+    switchIdeaTab(btn.dataset.ideaTab);
+  });
+});
+
+if (ideaPlannerFilter) {
+  ideaPlannerFilter.addEventListener('change', () => {
+    renderIdeaPlannerTable();
+  });
+}
 
 function syncSelectAllState() {
   if (!selectAllClients) return;
@@ -144,6 +222,7 @@ function renderIdeaSelectPage() {
 
   syncSelectAllState();
   renderIdeaAssignSummary();
+  renderIdeaPlannerTable();
 }
 
 if (ideaAssignSelect) {
@@ -574,7 +653,8 @@ function exportPlannerCsv() {
 renderAdmin();
 renderOverview();
 renderIdeaSelectPage();
+renderIdeaPlannerTable();
+switchIdeaTab('assign');
 renderPlanner();
 
 switchView('dashboard');
-

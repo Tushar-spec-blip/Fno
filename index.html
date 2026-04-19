@@ -82,32 +82,71 @@
             <h2>Idea Select</h2>
           </div>
 
-          <div class="idea-assign-wrap">
-            <div class="assign-controls">
-              <label for="ideaAssignSelect">Choose Idea ID</label>
-              <select id="ideaAssignSelect"></select>
-              <div id="selectedIdeaSnippet" class="idea-snippet"></div>
-              <label class="select-all-row">
-                <input type="checkbox" id="selectAllClients" />
-                Select All Clients
-              </label>
-              <button id="deselectAllClients" class="btn secondary">Deselect All</button>
-              <button id="submitIdeaAssign" class="btn">Submit Assignment</button>
-            </div>
-
-            <div class="client-checklist" id="clientChecklist"></div>
+          <div class="idea-tabs">
+            <button class="idea-tab-btn active" data-idea-tab="assign">Assign</button>
+            <button class="idea-tab-btn" data-idea-tab="planner">Idea Planner</button>
           </div>
 
-          <h3>Assignment Overview</h3>
-          <table id="ideaAssignSummaryTable">
-            <thead>
-              <tr>
-                <th>Idea ID</th>
-                <th>Assigned Clients Count</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
+          <div id="ideaSelectAssignPanel" class="idea-tab-panel active">
+            <div class="idea-assign-wrap">
+              <div class="assign-controls">
+                <label for="ideaAssignSelect">Choose Idea ID</label>
+                <select id="ideaAssignSelect"></select>
+                <div id="selectedIdeaSnippet" class="idea-snippet"></div>
+                <label class="select-all-row">
+                  <input type="checkbox" id="selectAllClients" />
+                  Select All Clients
+                </label>
+                <button id="deselectAllClients" class="btn secondary">Deselect All</button>
+                <button id="submitIdeaAssign" class="btn">Submit Assignment</button>
+              </div>
+
+              <div class="client-checklist" id="clientChecklist"></div>
+            </div>
+
+            <h3>Assignment Overview</h3>
+            <table id="ideaAssignSummaryTable">
+              <thead>
+                <tr>
+                  <th>Idea ID</th>
+                  <th>Assigned Clients Count</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+
+          <div id="ideaPlannerPanel" class="idea-tab-panel hidden-view">
+            <div class="section-head">
+              <h3>Idea Planner</h3>
+              <div>
+                <label for="ideaPlannerFilter">Filter by Idea ID</label>
+                <select id="ideaPlannerFilter"></select>
+              </div>
+            </div>
+
+            <table id="ideaPlannerTable">
+              <thead>
+                <tr>
+                  <th>Idea ID</th>
+                  <th>Client Ref</th>
+                  <th>Client Code</th>
+                  <th>Client Name</th>
+                  <th>Stock</th>
+                  <th>Trade Name</th>
+                  <th>Expiry</th>
+                  <th>Strike</th>
+                  <th>PE/CE</th>
+                  <th>BUY/SELL</th>
+                  <th>Lot Size</th>
+                  <th>Expected Premium Points</th>
+                  <th>Expected/Lots RS</th>
+                  <th>In Hand Prem</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
         </section>
 
         <section id="view-planner" class="view card hidden-view">
@@ -151,4 +190,3 @@
     <script src="app.js"></script>
   </body>
 </html>
-

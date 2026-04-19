@@ -225,6 +225,32 @@ input, select {
 
 
 
+
+.idea-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.idea-tab-btn {
+  border: 1px solid var(--line);
+  background: #f4f7ff;
+  color: #1e3552;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.idea-tab-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.idea-tab-panel {
+  display: block;
+}
+
 .idea-assign-wrap {
   display: grid;
   grid-template-columns: 280px 1fr;
@@ -381,21 +407,24 @@ input, select {
   #adminTable,
   #overviewTable,
   #plannerTable,
-  #ideaAssignSummaryTable {
+  #ideaAssignSummaryTable,
+  #ideaPlannerTable {
     min-width: 100%;
   }
 
   #adminTable thead,
   #overviewTable thead,
   #plannerTable thead,
-  #ideaAssignSummaryTable thead {
+  #ideaAssignSummaryTable thead,
+  #ideaPlannerTable thead {
     display: none;
   }
 
   #adminTable tbody tr,
   #overviewTable tbody tr,
   #plannerTable tbody tr,
-  #ideaAssignSummaryTable tbody tr {
+  #ideaAssignSummaryTable tbody tr,
+  #ideaPlannerTable tbody tr {
     display: grid;
     grid-template-columns: 1fr;
     gap: 6px;
@@ -409,7 +438,8 @@ input, select {
   #adminTable td,
   #overviewTable td,
   #plannerTable td,
-  #ideaAssignSummaryTable td {
+  #ideaAssignSummaryTable td,
+  #ideaPlannerTable td {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -423,7 +453,8 @@ input, select {
   #adminTable td::before,
   #overviewTable td::before,
   #plannerTable td::before,
-  #ideaAssignSummaryTable td::before {
+  #ideaAssignSummaryTable td::before,
+  #ideaPlannerTable td::before {
     content: attr(data-label);
     font-size: 11px;
     font-weight: 700;
