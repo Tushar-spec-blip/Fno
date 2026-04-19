@@ -21,6 +21,7 @@ const snapshot = document.getElementById('snapshot');
 const searchInput = document.querySelector('.search');
 const ideaAssignSelect = document.getElementById('ideaAssignSelect');
 const selectAllClients = document.getElementById('selectAllClients');
+const deselectAllClients = document.getElementById('deselectAllClients');
 const submitIdeaAssign = document.getElementById('submitIdeaAssign');
 const clientChecklist = document.getElementById('clientChecklist');
 const ideaAssignSummaryBody = document.querySelector('#ideaAssignSummaryTable tbody');
@@ -84,6 +85,14 @@ if (searchInput) {
   });
 }
 
+
+function syncSelectAllState() {
+  if (!selectAllClients) return;
+
+  const checks = [...document.querySelectorAll('.assign-client-check')];
+  selectAllClients.checked = checks.length > 0 && checks.every((check) => check.checked);
+}
+
 function renderIdeaAssignSummary() {
   if (!ideaAssignSummaryBody) return;
 
@@ -123,16 +132,17 @@ function renderIdeaSelectPage() {
 
   clientChecklist.innerHTML = adminData
     .map((client) => {
-      const checked = clientIdeaAssignment[client.ref] === activeIdea ? 'checked' : '';
-      return `<label class="check-item"><input type="checkbox" class="assign-client-check" data-client-ref="${client.ref}" ${checked}> ${client.ref} - ${client.clientName || 'Unnamed'}</label>`;
+      return `<label class="check-item"><input type="checkbox" class="assign-client-check" data-client-ref="${client.ref}"> ${client.ref} - ${client.clientName || 'Unnamed'}</label>`;
     })
     .join('');
 
-  if (selectAllClients) {
-    const checks = [...document.querySelectorAll('.assign-client-check')];
-    selectAllClients.checked = checks.length > 0 && checks.every((c) => c.checked);
-  }
+  document.querySelectorAll('.assign-client-check').forEach((check) => {
+    check.addEventListener('change', () => {
+      syncSelectAllState();
+    });
+  });
 
+  syncSelectAllState();
   renderIdeaAssignSummary();
 }
 
@@ -144,12 +154,19 @@ if (ideaAssignSelect) {
 
 if (selectAllClients) {
   selectAllClients.addEventListener('change', (e) => {
-    const checks = [...document.querySelectorAll('.assign-client-check')];
-    checks.forEach((check) => {
-      check.checked = !check.checked;
+    document.querySelectorAll('.assign-client-check').forEach((check) => {
+      check.checked = e.target.checked;
     });
+    syncSelectAllState();
+  });
+}
 
-    e.target.checked = checks.length > 0 && checks.every((check) => check.checked);
+if (deselectAllClients) {
+  deselectAllClients.addEventListener('click', () => {
+    document.querySelectorAll('.assign-client-check').forEach((check) => {
+      check.checked = false;
+    });
+    syncSelectAllState();
   });
 }
 
@@ -168,6 +185,11 @@ if (submitIdeaAssign) {
     selectedClients.forEach((clientRef) => {
       clientIdeaAssignment[clientRef] = ideaId;
     });
+
+    document.querySelectorAll('.assign-client-check').forEach((check) => {
+      check.checked = false;
+    });
+    syncSelectAllState();
 
     plannerData.forEach((row) => {
       if (row.clientRef && clientIdeaAssignment[row.clientRef]) {
@@ -555,3 +577,4 @@ renderIdeaSelectPage();
 renderPlanner();
 
 switchView('dashboard');
+
