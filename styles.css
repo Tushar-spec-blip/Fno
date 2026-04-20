@@ -425,6 +425,7 @@ input, select {
   }
 
   #adminTable,
+  #adminRevenueTable,
   #overviewTable,
   #plannerTable,
   #ideaAssignSummaryTable,
@@ -433,6 +434,7 @@ input, select {
   }
 
   #adminTable thead,
+  #adminRevenueTable thead,
   #overviewTable thead,
   #plannerTable thead,
   #ideaAssignSummaryTable thead,
@@ -441,6 +443,7 @@ input, select {
   }
 
   #adminTable tbody tr,
+  #adminRevenueTable tbody tr,
   #overviewTable tbody tr,
   #plannerTable tbody tr,
   #ideaAssignSummaryTable tbody tr,
@@ -456,6 +459,7 @@ input, select {
   }
 
   #adminTable td,
+  #adminRevenueTable td,
   #overviewTable td,
   #plannerTable td,
   #ideaAssignSummaryTable td,
@@ -471,6 +475,7 @@ input, select {
   }
 
   #adminTable td::before,
+  #adminRevenueTable td::before,
   #overviewTable td::before,
   #plannerTable td::before,
   #ideaAssignSummaryTable td::before,
@@ -484,12 +489,14 @@ input, select {
 
   #plannerTable td:last-child,
   #adminTable td:last-child,
+  #adminRevenueTable td:last-child,
   #overviewTable td:last-child {
     align-items: flex-end;
   }
 
   #plannerTable td:last-child::before,
   #adminTable td:last-child::before,
+  #adminRevenueTable td:last-child::before,
   #overviewTable td:last-child::before {
     align-self: flex-start;
   }

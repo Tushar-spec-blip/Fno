@@ -13,8 +13,10 @@ const plannerData = [
 ];
 
 const clientIdeaAssignment = {};
+const adminExpectedRevenue = {};
 
 const adminBody = document.querySelector('#adminTable tbody');
+const adminRevenueBody = document.querySelector('#adminRevenueTable tbody');
 const overviewBody = document.querySelector('#overviewTable tbody');
 const plannerBody = document.querySelector('#plannerTable tbody');
 const snapshot = document.getElementById('snapshot');
@@ -41,6 +43,7 @@ const views = {
   dashboard: document.getElementById('view-dashboard'),
   planner: document.getElementById('view-planner'),
   admin: document.getElementById('view-admin'),
+  'admin-revenue': document.getElementById('view-admin-revenue'),
   overview: document.getElementById('view-overview'),
   'idea-select': document.getElementById('view-idea-select'),
 };
@@ -58,6 +61,7 @@ function switchView(viewName) {
 
   applyTableSearch();
   renderIdeaSelectPage();
+  renderAdminRevenue();
 }
 
 viewButtons.forEach((btn) => {
@@ -74,7 +78,7 @@ if (menuToggle && shell) {
 
 
 function applyTableSearch() {
-  const tables = ['#adminTable', '#overviewTable', '#plannerTable', '#ideaPlannerTable'];
+  const tables = ['#adminTable', '#adminRevenueTable', '#overviewTable', '#plannerTable', '#ideaPlannerTable'];
 
   tables.forEach((selector) => {
     const rows = document.querySelectorAll(`${selector} tbody tr`);
@@ -186,9 +190,10 @@ function makeIdeaSelectRow(selectedValue = '') {
   const select = document.createElement('select');
   select.className = 'idea-assign-select';
   const ideaIds = overviewData.map((x) => x.ideaId).filter(Boolean);
-  select.innerHTML = ideaIds
-    .map((ideaId) => `<option ${selectedValue === ideaId ? 'selected' : ''} value="${ideaId}">${ideaId}</option>`)
+  const options = ['<option value="">Select Idea ID</option>', ...ideaIds
+    .map((ideaId) => `<option ${selectedValue === ideaId ? 'selected' : ''} value="${ideaId}">${ideaId}</option>`)]
     .join('');
+  select.innerHTML = options;
 
   const removeBtn = document.createElement('button');
   removeBtn.type = 'button';
@@ -205,6 +210,18 @@ function makeIdeaSelectRow(selectedValue = '') {
   });
 
   select.addEventListener('change', () => {
+    const selected = select.value;
+    if (selected) {
+      const others = [...document.querySelectorAll('.idea-assign-select')]
+        .filter((node) => node !== select)
+        .map((node) => node.value);
+
+      if (others.includes(selected)) {
+        alert('This Idea ID is already selected. Please choose a different Idea ID.');
+        select.value = '';
+      }
+    }
+
     renderIdeaSelectPage();
   });
 
@@ -243,7 +260,7 @@ function renderIdeaAssignSummary() {
 function renderIdeaSelectPage() {
   if (!ideaAssignSelect || !clientChecklist) return;
 
-  const selectedIdeaIdsBefore = getSelectedIdeaIds();
+  const selectedIdeaIdsBefore = [...document.querySelectorAll('.idea-assign-select')].map((sel) => sel.value);
 
   if (ideaSelectList) {
     const currentRows = [...ideaSelectList.querySelectorAll('.idea-select-row')];
@@ -259,6 +276,21 @@ function renderIdeaSelectPage() {
   }
 
   const selectedIdeaIds = getSelectedIdeaIds();
+
+  // Disable already-selected idea options in other dropdown rows.
+  const selects = [...document.querySelectorAll('.idea-assign-select')];
+  selects.forEach((select) => {
+    const others = selects
+      .filter((node) => node !== select)
+      .map((node) => node.value)
+      .filter(Boolean);
+
+    [...select.options].forEach((opt) => {
+      if (!opt.value) return;
+      opt.disabled = others.includes(opt.value) && select.value !== opt.value;
+    });
+  });
+
   if (selectedIdeaSnippet) {
     if (selectedIdeaIds.length === 0) {
       selectedIdeaSnippet.textContent = 'Select an Idea ID to view quick details.';
@@ -329,9 +361,23 @@ if (submitIdeaAssign) {
       .map((node) => node.dataset.clientRef)
       .filter(Boolean);
 
+    const duplicates = [];
     selectedClients.forEach((clientRef) => {
       const existing = clientIdeaAssignment[clientRef] || [];
-      clientIdeaAssignment[clientRef] = [...new Set([...existing, ...selectedIdeaIds])];
+      const repeated = selectedIdeaIds.filter((ideaId) => existing.includes(ideaId));
+      if (repeated.length > 0) {
+        duplicates.push(`${clientRef}: ${repeated.join(', ')}`);
+      }
+    });
+
+    if (duplicates.length > 0) {
+      alert(`Duplicate idea assignment detected.\n${duplicates.join('\n')}`);
+      return;
+    }
+
+    selectedClients.forEach((clientRef) => {
+      const existing = clientIdeaAssignment[clientRef] || [];
+      clientIdeaAssignment[clientRef] = [...existing, ...selectedIdeaIds];
     });
 
     document.querySelectorAll('.assign-client-check').forEach((check) => {
@@ -520,6 +566,35 @@ function renderAdmin() {
 
   applyTableSearch();
   renderIdeaSelectPage();
+  renderAdminRevenue();
+}
+
+
+function renderAdminRevenue() {
+  if (!adminRevenueBody) return;
+
+  adminRevenueBody.innerHTML = '';
+  adminData.forEach((row) => {
+    const tr = document.createElement('tr');
+    const currentValue = adminExpectedRevenue[row.ref] ?? 0;
+    tr.innerHTML = `
+      <td data-label="Client Ref">${row.ref}</td>
+      <td data-label="Allocation ID (A)">${row.allocationId}</td>
+      <td data-label="Client Code (B)">${row.clientCode}</td>
+      <td data-label="Client Name (C)">${row.clientName}</td>
+      <td data-label="Expected Revenue"><input type="number" class="admin-revenue-input" data-client-ref="${row.ref}" value="${currentValue}"></td>
+    `;
+    adminRevenueBody.appendChild(tr);
+  });
+
+  adminRevenueBody.querySelectorAll('.admin-revenue-input').forEach((input) => {
+    input.addEventListener('change', (e) => {
+      const clientRef = e.target.dataset.clientRef;
+      adminExpectedRevenue[clientRef] = Number(e.target.value || 0);
+    });
+  });
+
+  applyTableSearch();
 }
 
 function renderOverview() {
@@ -585,6 +660,7 @@ function renderOverview() {
 
   applyTableSearch();
   renderIdeaSelectPage();
+  renderAdminRevenue();
 }
 
 function renderPlanner() {
@@ -642,6 +718,7 @@ function renderPlanner() {
   renderSnapshot();
   applyTableSearch();
   renderIdeaSelectPage();
+  renderAdminRevenue();
 }
 
 function renderSnapshot() {
@@ -720,6 +797,7 @@ function exportPlannerCsv() {
 }
 
 renderAdmin();
+renderAdminRevenue();
 renderOverview();
 renderIdeaSelectPage();
 renderIdeaPlannerTable();
@@ -727,3 +805,5 @@ switchIdeaTab('assign');
 renderPlanner();
 
 switchView('dashboard');
+
+
